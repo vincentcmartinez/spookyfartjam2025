@@ -1,23 +1,15 @@
 [gd_scene load_steps=3 format=3 uid="uid://blit253bgerch"]
 
-[ext_resource type="PackedScene" uid="uid://doahbic7q0shx" path="res://platform.tscn" id="1_fj7yv"]
-[ext_resource type="PackedScene" uid="uid://cm02bwo8guyse" path="res://player.tscn" id="2_tlwt5"]
+[ext_resource type="PackedScene" uid="uid://yq6wnvx6oepm" path="res://player.tscn" id="2_fj7yv"]
+[ext_resource type="PackedScene" uid="uid://b31q0iyxhp326" path="res://tilemapBase.tscn" id="3_tlwt5"]
 
 [node name="world" type="Node2D"]
 
-[node name="platforms" type="Node2D" parent="."]
+[node name="Player" parent="." instance=ExtResource("2_fj7yv")]
+position = Vector2(-67, -97)
 
-[node name="Node2D" parent="platforms" instance=ExtResource("1_fj7yv")]
-position = Vector2(206, 464)
+[node name="Camera2D" type="Camera2D" parent="."]
+position = Vector2(3, -114)
+zoom = Vector2(2, 2)
 
-[node name="Node2D2" parent="platforms" instance=ExtResource("1_fj7yv")]
-position = Vector2(400, 425)
-
-[node name="Node2D3" parent="platforms" instance=ExtResource("1_fj7yv")]
-position = Vector2(646, 438)
-
-[node name="Node2D4" parent="platforms" instance=ExtResource("1_fj7yv")]
-position = Vector2(837, 520)
-
-[node name="player" parent="." instance=ExtResource("2_tlwt5")]
-position = Vector2(396, 376)
+[node name="tilemap" parent="." instance=ExtResource("3_tlwt5")]
