@@ -314,17 +314,29 @@ position = Vector2(3, -114)
 zoom = Vector2(2, 2)
 
 [node name="tilemap" parent="." instance=ExtResource("3_tlwt5")]
+scale = Vector2(1.5, 1.5)
 
 [node name="Player" type="CharacterBody2D" parent="."]
 position = Vector2(5, -9)
 script = ExtResource("2_tlwt5")
 base_sprite_offset = Vector2(0, -14)
+per_anim_offsets = {
+"dead": Vector2(0, 0),
+"fall": Vector2(0, -2),
+"floor_slide": Vector2(4, 0),
+"hurt": Vector2(0, -1),
+"idle": Vector2(0, -1),
+"jump": Vector2(0, -3),
+"run": Vector2(0, -1),
+"walk": Vector2(0, -1),
+"wall_slide": Vector2(0, -2)
+}
 
 [node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="Player"]
 texture_filter = 1
 position = Vector2(-1, -15)
 sprite_frames = SubResource("SpriteFrames_ytpkv")
-animation = &"run"
+animation = &"wall_slide"
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="Player"]
 position = Vector2(-0.25, -3)

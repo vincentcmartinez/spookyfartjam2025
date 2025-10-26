@@ -99,6 +99,17 @@ var _fric_mult: float = 1.0
 var _possessed_device: int = -1
 var _possess_left: float = 0.0
 
+# --- Wall-facing config ---
+@export var wall_normal_face_threshold: float = 0.6  # require a fairly vertical wall
+@export var wall_face_sticky: float = 0.08          # seconds to keep wall-facing after contact
+
+# --- Wall-facing state ---
+var _wall_face_dir: int = 0      # -1 = face left, +1 = face right, 0 = none
+var _wall_face_hold: float = 0.0 # decay timer for wall-facing
+
+# --- Input cache for facing priority ---
+var _input_dir_x: float = 0.0
+
 # ---------- Signals ----------
 signal jumped
 
@@ -152,6 +163,7 @@ func _physics_process(delta: float) -> void:
 	var dir_x: float = _get_move_input()
 	if _frozen:
 		dir_x = 0.0
+	_input_dir_x = dir_x  # <-- ADD THIS
 
 	# Aim (right stick / actions)
 	var aim_in: Vector2 = _get_aim_input()
@@ -238,6 +250,7 @@ func _physics_process(delta: float) -> void:
 	if _hurt_left > 0.0:
 		_hurt_left -= delta
 
+	_refresh_wall_facing(delta)
 	# Drive animations
 	_update_animation(pushing_into_wall)
 
@@ -303,26 +316,29 @@ func _play(anim_name: String) -> void:
 		anim.play(anim_name)
 	_apply_anim_offset()
 
-func _face(dir_x: float) -> void:
+func _face_context(pushing_into_wall: bool) -> void:
 	if not anim:
 		return
 
 	var wanted: int = _face_dir
 
-	# 1) Prefer active aim this frame (only if X component is meaningful)
-	if _aim_active and absf(aim_vector.x) > 0.05:
+	# 1) Wall takes priority if we're pushing/holding, or during sticky window
+	if (pushing_into_wall or _wall_face_hold > 0.0) and _wall_face_dir != 0:
+		wanted = _wall_face_dir
+	# 2) Active aim this frame (when right stick/mapped aim is used)
+	elif _aim_active and absf(aim_vector.x) > 0.05:
 		wanted = (-1 if aim_vector.x < 0.0 else 1)
-	# 2) Else prefer current horizontal input
-	elif absf(dir_x) > 0.05:
-		wanted = (-1 if dir_x < 0.0 else 1)
-	# 3) Else fall back to current horizontal velocity
+	# 3) Horizontal input (keyboard or left stick)
+	elif absf(_input_dir_x) > 0.05:
+		wanted = (-1 if _input_dir_x < 0.0 else 1)
+	# 4) Fallback to current horizontal velocity
 	elif absf(velocity.x) > 0.05:
 		wanted = (-1 if velocity.x < 0.0 else 1)
-	# 4) Else keep last facing (wanted stays _face_dir)
+	# 5) Else keep last
 
 	_face_dir = wanted
 	anim.flip_h = (_face_dir < 0)
-	_apply_anim_offset()  # keep per-anim offsets mirrored correctly
+	_apply_anim_offset()  # keep per-anim/per-frame offsets mirrored correctly
 
 func _update_animation(pushing_into_wall: bool) -> void:
 	if _is_dead:
@@ -331,18 +347,17 @@ func _update_animation(pushing_into_wall: bool) -> void:
 
 	if _hurt_left > 0.0:
 		_play("hurt")
-		_face(velocity.x)
+		_face_context(pushing_into_wall)
 		return
 
 	if _is_dashing and is_on_floor():
 		_play("floor_slide")
-		_face(velocity.x)
+		_face_context(pushing_into_wall)
 		return
 
 	if not is_on_floor() and pushing_into_wall and velocity.y > 0.0:
 		_play("wall_slide")
-		var wall_n := _get_wall_normal_x()
-		_face(-wall_n)
+		_face_context(pushing_into_wall)
 		return
 
 	if not is_on_floor():
@@ -350,7 +365,7 @@ func _update_animation(pushing_into_wall: bool) -> void:
 			_play("jump")
 		else:
 			_play("fall")
-		_face(velocity.x)
+		_face_context(pushing_into_wall)
 		return
 
 	var speed: float = absf(velocity.x)
@@ -360,7 +375,32 @@ func _update_animation(pushing_into_wall: bool) -> void:
 		_play("walk")
 	else:
 		_play("idle")
-	_face(velocity.x)
+
+	_face_context(pushing_into_wall)
+
+func _refresh_wall_facing(delta: float) -> void:
+	var best_nx: float = 0.0
+	var best_abs: float = 0.0
+	var count: int = get_slide_collision_count()
+	for i in range(count):
+		var col: KinematicCollision2D = get_slide_collision(i)
+		if col:
+			var n: Vector2 = col.get_normal()
+			# Treat it as a wall if the normal is mostly horizontal
+			if absf(n.x) >= wall_normal_face_threshold and absf(n.x) > absf(n.y):
+				if absf(n.x) > best_abs:
+					best_abs = absf(n.x)
+					best_nx = n.x
+
+	if best_abs > 0.0:
+		# Face TOWARD the wall: opposite the normal.x
+		_wall_face_dir = int(signf(best_nx))
+		_wall_face_hold = wall_face_sticky
+	else:
+		if _wall_face_hold > 0.0:
+			_wall_face_hold -= delta
+			if _wall_face_hold <= 0.0:
+				_wall_face_dir = 0
 
 # Apply per-animation/per-frame offsets to the sprite node position
 func _on_anim_frame_changed() -> void:
