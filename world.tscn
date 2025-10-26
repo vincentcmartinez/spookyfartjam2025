@@ -1,15 +1,27 @@
-[gd_scene load_steps=3 format=3 uid="uid://blit253bgerch"]
+[gd_scene load_steps=5 format=3 uid="uid://blit253bgerch"]
 
-[ext_resource type="PackedScene" uid="uid://yq6wnvx6oepm" path="res://player.tscn" id="2_fj7yv"]
+[ext_resource type="Script" uid="uid://ucq8ds2dbtdh" path="res://scripts/PlayerMovement.gd" id="2_tlwt5"]
 [ext_resource type="PackedScene" uid="uid://b31q0iyxhp326" path="res://tilemapBase.tscn" id="3_tlwt5"]
+[ext_resource type="Texture2D" uid="uid://cbj6q1c8altds" path="res://icon.svg" id="4_aqk2v"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_036b0"]
 
 [node name="world" type="Node2D"]
-
-[node name="Player" parent="." instance=ExtResource("2_fj7yv")]
-position = Vector2(-67, -97)
 
 [node name="Camera2D" type="Camera2D" parent="."]
 position = Vector2(3, -114)
 zoom = Vector2(2, 2)
 
 [node name="tilemap" parent="." instance=ExtResource("3_tlwt5")]
+
+[node name="Player" type="CharacterBody2D" parent="."]
+position = Vector2(5, -16)
+script = ExtResource("2_tlwt5")
+
+[node name="Sprite2D" type="Sprite2D" parent="Player"]
+scale = Vector2(0.2, 0.2)
+texture = ExtResource("4_aqk2v")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Player"]
+scale = Vector2(1.1, 1.1)
+shape = SubResource("RectangleShape2D_036b0")
